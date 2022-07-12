@@ -37,6 +37,7 @@ type Config struct {
 	Plugins      Plugins
 	Pinning      Pinning
 
+	Luanet   Luanet
 	Internal Internal // experimental/unstable options
 }
 

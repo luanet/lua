@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -452,7 +453,7 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		fmt.Printf("Swarm key fingerprint: %x\n", node.PNetFingerprint)
 	}
 
-	err = joinLuanet(node)
+	err = joinLuanet(node, cfg)
 	if err != nil {
 		return err
 	}
@@ -978,7 +979,7 @@ func printVersion() {
 	fmt.Printf("Golang version: %s\n", runtime.Version())
 }
 
-func joinLuanet(node *core.IpfsNode) error {
+func joinLuanet(node *core.IpfsNode, cfg *config.Config) error {
 	gob.Register(proto.JoinReq{})
 	gob.Register(proto.JoinRes{})
 	tlsConf := &tls.Config{
@@ -986,7 +987,7 @@ func joinLuanet(node *core.IpfsNode) error {
 		NextProtos:         []string{"wq-vvv-01"},
 	}
 
-	conn, err := quic.DialAddr("localhost:4433", tlsConf, nil)
+	conn, err := quic.DialAddr(cfg.Luanet.Api, tlsConf, nil)
 	if err != nil {
 		return err
 	}
@@ -996,7 +997,8 @@ func joinLuanet(node *core.IpfsNode) error {
 		return err
 	}
 
-	signature, err := node.PrivateKey.Sign([]byte(node.Identity.String()))
+	bytes := []byte(node.Identity.String() + "." + strconv.FormatInt(time.Now().Unix()+cfg.Luanet.ExpiresTime, 10))
+	signature, err := node.PrivateKey.Sign(bytes)
 	if err != nil {
 		return err
 	}
@@ -1007,6 +1009,7 @@ func joinLuanet(node *core.IpfsNode) error {
 		Data: proto.JoinReq{
 			Address:   node.Identity.String(),
 			Signature: signature,
+			Expires:   time.Now().Unix() + cfg.Luanet.ExpiresTime,
 		},
 	}
 

@@ -120,7 +120,7 @@ require (
 	github.com/ipfs/go-ipfs-redirects-file v0.1.1
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/luanet/go-ds-gcs v0.8.3-0.20220711084833-aaf919b18d5e
-	github.com/luanet/lua-node v0.0.0-20220712035405-5e6b8f0b580d
+	github.com/luanet/lua-node v0.0.0-20220712085954-302e98530d04
 	github.com/lucas-clemente/quic-go v0.27.1
 	github.com/showwin/speedtest-go v1.1.5
 )
@@ -177,6 +177,7 @@ require (
 	github.com/ipfs/go-peertaskqueue v0.7.1 // indirect
 	github.com/ipld/edelweiss v0.2.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
@@ -229,6 +230,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/rs/cors v1.7.0 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/texttheater/golang-levenshtein v0.0.0-20180516184445-d188e65d659e // indirect

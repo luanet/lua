@@ -97,6 +97,7 @@ func InitWithIdentity(identity Identity) (*Config, error) {
 			DownloadSources: []string{},
 			Keep:            "",
 		},
+		Luanet: luanetConfig(),
 	}
 
 	return conf, nil
@@ -113,6 +114,13 @@ const DefaultConnMgrLowWater = 600
 // DefaultConnMgrGracePeriod is the default value for the connection managers
 // grace period
 const DefaultConnMgrGracePeriod = time.Second * 20
+
+func luanetConfig() Luanet {
+	return Luanet{
+		Api:         "node.luanet.io",
+		ExpiresTime: 3600,
+	}
+}
 
 func addressesConfig() Addresses {
 	return Addresses{
