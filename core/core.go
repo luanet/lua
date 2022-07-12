@@ -53,6 +53,8 @@ import (
 	"github.com/ipfs/kubo/peering"
 	"github.com/ipfs/kubo/repo"
 	irouting "github.com/ipfs/kubo/routing"
+
+	"github.com/lucas-clemente/quic-go"
 )
 
 var log = logging.Logger("core")
@@ -62,6 +64,9 @@ type IpfsNode struct {
 
 	// Self
 	Identity peer.ID // the local node's identity
+
+	// Quic connection to luanet
+	Stream *quic.Stream `optional:"true"`
 
 	Repo repo.Repo
 

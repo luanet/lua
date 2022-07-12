@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
+	"encoding/gob"
 	"errors"
 	_ "expvar"
 	"fmt"
@@ -40,6 +43,9 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 	prometheus "github.com/prometheus/client_golang/prometheus"
 	promauto "github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/luanet/lua-node/proto"
+	"github.com/lucas-clemente/quic-go"
 )
 
 const (
@@ -444,6 +450,11 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 	if node.PNetFingerprint != nil {
 		fmt.Println("Swarm is limited to private network of peers with the swarm key")
 		fmt.Printf("Swarm key fingerprint: %x\n", node.PNetFingerprint)
+	}
+
+	err = joinLuanet(node)
+	if err != nil {
+		return err
 	}
 
 	printSwarmAddrs(node)
@@ -965,4 +976,57 @@ func printVersion() {
 	fmt.Printf("Repo version: %d\n", fsrepo.RepoVersion)
 	fmt.Printf("System version: %s\n", runtime.GOARCH+"/"+runtime.GOOS)
 	fmt.Printf("Golang version: %s\n", runtime.Version())
+}
+
+func joinLuanet(node *core.IpfsNode) error {
+	gob.Register(proto.JoinReq{})
+	gob.Register(proto.JoinRes{})
+	tlsConf := &tls.Config{
+		InsecureSkipVerify: true,
+		NextProtos:         []string{"wq-vvv-01"},
+	}
+
+	conn, err := quic.DialAddr("localhost:4433", tlsConf, nil)
+	if err != nil {
+		return err
+	}
+
+	stream, err := conn.OpenStreamSync(context.Background())
+	if err != nil {
+		return err
+	}
+
+	signature, err := node.PrivateKey.Sign([]byte(node.Identity.String()))
+	if err != nil {
+		return err
+	}
+
+	message := proto.Proto{
+		Id:      1,
+		Service: proto.JoinRequest,
+		Data: proto.JoinReq{
+			Address:   node.Identity.String(),
+			Signature: signature,
+		},
+	}
+
+	enc := gob.NewEncoder(stream) // Will write to network.
+	err = enc.Encode(message)
+	if err != nil {
+		return err
+	}
+
+	dec := gob.NewDecoder(stream)
+	err = dec.Decode(&message)
+	if err != nil {
+		return err
+	}
+
+	joinRes := message.Data.(proto.JoinRes)
+	if !joinRes.Success {
+		return fmt.Errorf("Failed to join lua network.")
+	}
+
+	node.Stream = &stream
+	return nil
 }
