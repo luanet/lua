@@ -709,3 +709,22 @@ func DaemonNotRunning(req *cmds.Request, env cmds.Environment) error {
 
 	return nil
 }
+
+// DaemonNotRunning checks to see if the ipfs repo is locked, indicating that
+// the daemon is running, and returns and error if the daemon is running.
+func DaemonRunning(req *cmds.Request, env cmds.Environment) error {
+	cctx := env.(*oldcmds.Context)
+	daemonLocked, err := fsrepo.LockedByOtherProcess(cctx.ConfigRoot)
+	if err != nil {
+		return err
+	}
+
+	log.Info("checking if daemon is running...")
+	if !daemonLocked {
+		log.Debug("ipfs daemon is not running")
+		e := "ipfs daemon is not running. please start it to run this command"
+		return cmds.ClientError(e)
+	}
+
+	return nil
+}

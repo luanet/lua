@@ -22,6 +22,7 @@ var commandsClientCmd = commands.CommandsCmd(Root)
 var localCommands = map[string]*cmds.Command{
 	"daemon":   daemonCmd,
 	"init":     initCmd,
+	"test":     testCmd,
 	"commands": commandsClientCmd,
 }
 
