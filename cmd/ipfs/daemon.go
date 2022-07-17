@@ -1,9 +1,6 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	"encoding/gob"
 	"errors"
 	_ "expvar"
 	"fmt"
@@ -13,7 +10,6 @@ import (
 	"os"
 	"runtime"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
@@ -44,9 +40,6 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 	prometheus "github.com/prometheus/client_golang/prometheus"
 	promauto "github.com/prometheus/client_golang/prometheus/promauto"
-
-	"github.com/luanet/lua-node/proto"
-	"github.com/lucas-clemente/quic-go"
 )
 
 const (
@@ -453,10 +446,12 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		fmt.Printf("Swarm key fingerprint: %x\n", node.PNetFingerprint)
 	}
 
-	err = joinLuanet(node, cfg)
+	err = node.JoinLuanet()
 	if err != nil {
 		return err
 	}
+
+	go node.HeartBeat()
 
 	printSwarmAddrs(node)
 
@@ -977,59 +972,4 @@ func printVersion() {
 	fmt.Printf("Repo version: %d\n", fsrepo.RepoVersion)
 	fmt.Printf("System version: %s\n", runtime.GOARCH+"/"+runtime.GOOS)
 	fmt.Printf("Golang version: %s\n", runtime.Version())
-}
-
-func joinLuanet(node *core.IpfsNode, cfg *config.Config) error {
-	gob.Register(proto.JoinReq{})
-	gob.Register(proto.JoinRes{})
-	tlsConf := &tls.Config{
-		InsecureSkipVerify: true,
-		NextProtos:         []string{"wq-vvv-01"},
-	}
-
-	conn, err := quic.DialAddr(cfg.Luanet.Api, tlsConf, nil)
-	if err != nil {
-		return err
-	}
-
-	stream, err := conn.OpenStreamSync(context.Background())
-	if err != nil {
-		return err
-	}
-
-	bytes := []byte(node.Identity.String() + "." + strconv.FormatInt(time.Now().Unix()+cfg.Luanet.ExpiresTime, 10))
-	signature, err := node.PrivateKey.Sign(bytes)
-	if err != nil {
-		return err
-	}
-
-	message := proto.Proto{
-		Id:      1,
-		Service: proto.JoinRequest,
-		Data: proto.JoinReq{
-			Address:   node.Identity.String(),
-			Signature: signature,
-			Expires:   time.Now().Unix() + cfg.Luanet.ExpiresTime,
-		},
-	}
-
-	enc := gob.NewEncoder(stream) // Will write to network.
-	err = enc.Encode(message)
-	if err != nil {
-		return err
-	}
-
-	dec := gob.NewDecoder(stream)
-	err = dec.Decode(&message)
-	if err != nil {
-		return err
-	}
-
-	joinRes := message.Data.(proto.JoinRes)
-	if !joinRes.Success {
-		return fmt.Errorf("Failed to join lua network.")
-	}
-
-	node.Stream = &stream
-	return nil
 }

@@ -11,7 +11,12 @@ package core
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/gob"
+	"fmt"
 	"io"
+	"strconv"
+	"time"
 
 	"github.com/ipfs/go-filestore"
 	pin "github.com/ipfs/go-ipfs-pinner"
@@ -54,6 +59,7 @@ import (
 	"github.com/ipfs/kubo/repo"
 	irouting "github.com/ipfs/kubo/routing"
 
+	"github.com/luanet/lua-node/proto"
 	"github.com/lucas-clemente/quic-go"
 )
 
@@ -180,6 +186,96 @@ func (n *IpfsNode) loadBootstrapPeers() ([]peer.AddrInfo, error) {
 	}
 
 	return cfg.BootstrapPeers()
+}
+
+func (n *IpfsNode) JoinLuanet() error {
+	cfg, err := n.Repo.Config()
+	if err != nil {
+		return err
+	}
+
+	gob.Register(proto.JoinReq{})
+	gob.Register(proto.JoinRes{})
+	tlsConf := &tls.Config{
+		InsecureSkipVerify: true,
+		NextProtos:         []string{"wq-vvv-01"},
+	}
+
+	conn, err := quic.DialAddr(cfg.Luanet.Api, tlsConf, nil)
+	if err != nil {
+		return err
+	}
+
+	stream, err := conn.OpenStreamSync(context.Background())
+	if err != nil {
+		return err
+	}
+
+	bytes := []byte(n.Identity.String() + "." + strconv.FormatInt(time.Now().Unix()+cfg.Luanet.ExpiresTime, 10))
+	signature, err := n.PrivateKey.Sign(bytes)
+	if err != nil {
+		return err
+	}
+
+	message := proto.Proto{
+		Service: proto.JoinService,
+		Data: proto.JoinReq{
+			Address:   n.Identity.String(),
+			Signature: signature,
+			Expires:   time.Now().Unix() + cfg.Luanet.ExpiresTime,
+		},
+	}
+
+	n.Stream = &stream
+	n.SendQuicMsg(message)
+
+	dec := gob.NewDecoder(stream)
+	err = dec.Decode(&message)
+	if err != nil {
+		return err
+	}
+
+	joinRes := message.Data.(proto.JoinRes)
+	if !joinRes.Success {
+		return fmt.Errorf("Failed to join lua network.")
+	}
+
+	return nil
+}
+
+func (n *IpfsNode) HeartBeat() {
+	gob.Register(proto.HeartBeatReq{})
+	gob.Register(proto.HeartBeatRes{})
+	ticker := time.NewTicker(500 * time.Millisecond)
+	for {
+		select {
+		case <-ticker.C:
+			fmt.Println("Get brandwidth to Sending heartBeat")
+			totals := n.Reporter.GetBandwidthTotals()
+			message := proto.Proto{
+				Service: proto.HeartBeatService,
+				Data: proto.HeartBeatReq{
+					Stats: totals,
+				},
+			}
+
+			n.SendQuicMsg(message)
+		}
+	}
+}
+
+func (n *IpfsNode) SendQuicMsg(msg proto.Proto) {
+	enc := gob.NewEncoder(*n.Stream) // Will write to network.
+	err := enc.Encode(msg)
+	if err != nil && err.Error() == "timeout: no recent network activity" {
+		err = n.JoinLuanet()
+		if err != nil {
+			log.Error("Failed to rejoin network after error: %v", err)
+			panic("Failed to rejoin network after error.")
+		}
+	} else if err != nil {
+		log.Error("Failed to send heartbeat message: %v", err)
+	}
 }
 
 type ConstructPeerHostOpts struct {
