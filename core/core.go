@@ -237,7 +237,7 @@ func (n *IpfsNode) JoinLuanet() error {
 
 	joinRes := message.Data.(proto.JoinRes)
 	if !joinRes.Success {
-		return fmt.Errorf("Failed to join lua network.")
+		return fmt.Errorf("Failed to join lua network: %s", joinRes.Message)
 	}
 
 	return nil
