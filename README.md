@@ -1,24 +1,17 @@
+# Luanet Node
 
-![kubo, an IPFS node in Go](https://ipfs.io/ipfs/bafykbzacecaesuqmivkauix25v6i6xxxsvsrtxknhgb5zak3xxsg2nb4dhs2u/ipfs.go.png)
-
-[![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square&cacheSeconds=3600)](https://protocol.ai)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=flat-square&cacheSeconds=3600)](https://godoc.org/github.com/ipfs/kubo)
 [![CircleCI](https://img.shields.io/circleci/build/github/ipfs/kubo?style=flat-square&cacheSeconds=3600)](https://circleci.com/gh/ipfs/kubo)
 
-## What is Kubo?
+## What is go-lua?
 
-Kubo was the first is the most widely used IPFS implementation today. Implementing the *Interplanetary Filesystem* - the Web3 standard and contender to replace https. Thus powered by IPLD's data models and the libp2p for network communication. Kubo is written in Go.
+The earliest and most widely used implementation of IPFS node for Luanet.
 
-Featureset
-- Runs an IPFS-Node as a network service
-- [Command Line Interface](https://docs.ipfs.tech/reference/kubo/cli/) to IPFS-Nodes
-- Local [Web2-to-Web3 HTTP Gateway functionality](https://github.com/ipfs/specs/tree/main/http-gateways#readme) 
-- HTTP RPC API (`/api/v0`) to access and control the daemon
-- IPFS's internal Webgui can be used to manage the Kubo nodes
-
-### Other implementations
-
-See [List](https://docs.ipfs.tech/basics/ipfs-implementations/)
+It includes:
+- an IPFS daemon server
+- extensive [command line tooling](https://docs.ipfs.io/reference/cli/)
+- an [HTTP Gateway](https://github.com/ipfs/specs/tree/main/http-gateways#readme) (`/ipfs/`, `/ipns/`) for serving content to HTTP browsers with an extra authentication layer to protect private file saved by Luanet renters.
+- an HTTP RPC API (`/api/v0`) for controlling the daemon node
 
 ## What is IPFS?
 
@@ -26,32 +19,23 @@ IPFS is a global, versioned, peer-to-peer filesystem. It combines good ideas fro
 
 For more info see: https://docs.ipfs.tech/concepts/what-is-ipfs/
 
-Before opening an issue, consider using one of the following locations to ensure you are opening your thread in the right place:
-  - kubo (previously named go-ipfs) _implementation_ bugs in [this repo](https://github.com/ipfs/kubo/issues).
-  - Documentation issues in [ipfs/docs issues](https://github.com/ipfs/ipfs-docs/issues).
-  - IPFS _design_ in [ipfs/specs issues](https://github.com/ipfs/specs/issues).
-  - Exploration of new ideas in [ipfs/notes issues](https://github.com/ipfs/notes/issues).
-  - Ask questions and meet the rest of the community at the [IPFS Forum](https://discuss.ipfs.tech).
-  - Or [chat with us](https://docs.ipfs.tech/community/chat/).
- 
-[![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCdjsUXJ3QawK4O5L1kqqsew?label=Subscribe%20IPFS&style=social&cacheSeconds=3600)](https://www.youtube.com/channel/UCdjsUXJ3QawK4O5L1kqqsew) [![Follow @IPFS on Twitter](https://img.shields.io/twitter/follow/IPFS?style=social&cacheSeconds=3600)](https://twitter.com/IPFS)
-
-## Next milestones
-
-[Milestones on GitHub](https://github.com/ipfs/kubo/milestones)
+## Architecture Diagram
+![](https://user-images.githubusercontent.com/106291312/180193047-89c198bc-2151-40de-a974-ee5721ed6116.png)
 
 
 ## Table of Contents
 
-- [What is Kubo?](#what-is-kubo)
-- [What is IPFS?](#what-is-ipfs)
-- [Next milestones](#next-milestones)
-- [Table of Contents](#table-of-contents)
-- [Security Issues](#security-issues)
-- [Install](#install)
-  - [System Requirements](#system-requirements)
-  - [Docker](#docker)
-  - [Official prebuilt binaries](#official-prebuilt-binaries)
+- [kubo](#kubo)
+  - [What is IPFS?](#what-is-ipfs)
+  - [Install](#install)
+    - [System Requirements](#system-requirements)
+    - [Install prebuilt binaries](#install-prebuilt-binaries)
+    - [Build from Source](#build-from-source)
+      - [Install Go](#install-go)
+      - [Download and Compile IPFS](#download-and-compile-ipfs)
+        - [Cross Compiling](#cross-compiling)
+        - [OpenSSL](#openssl)
+      - [Troubleshooting](#troubleshooting)
     - [Updating](#updating)
       - [Using ipfs-update](#using-ipfs-update)
       - [Downloading builds using IPFS](#downloading-builds-using-ipfs)
@@ -90,209 +74,28 @@ Before opening an issue, consider using one of the following locations to ensure
 - [Contributing](#contributing)
 - [License](#license)
 
-## Security Issues
-
-Please follow [`SECURITY.md`](SECURITY.md).
-
 ## Install
 
 The canonical download instructions for IPFS are over at: https://docs.ipfs.tech/install/. It is **highly recommended** you follow those instructions if you are not interested in working on IPFS development.
 
 ### System Requirements
 
-IPFS can run on most Linux, macOS, and Windows systems. We recommend running it on a machine with at least 2 GB of RAM and 2 CPU cores (kubo is highly parallel). On systems with less memory, it may not be completely stable.
+IPFS can run on most Linux, macOS, and Windows systems. We recommend running it on a machine with at least 2 GB of RAM and 2 CPU cores. On systems with less memory, it may not be completely stable.
 
 If your system is resource-constrained, we recommend:
 
-1. Installing OpenSSL and rebuilding kubo manually with `make build GOTAGS=openssl`. See the [download and compile](#download-and-compile-ipfs) section for more information on compiling kubo.
+1. Installing OpenSSL and rebuilding go-lua manually with `make build GOTAGS=openssl`. See the [download and compile](#download-and-compile-ipfs) section for more information on compiling go-lua.
 2. Initializing your daemon with `ipfs init --profile=lowpower`
 
-### Docker
+### Install prebuilt binaries
 
-Official images are published at https://hub.docker.com/r/ipfs/kubo/:
-
-[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/ipfs/kubo?color=blue&label=kubo%20docker%20image&logo=docker&sort=semver&style=flat-square&cacheSeconds=3600)](https://hub.docker.com/r/ipfs/kubo/)
-
-More info on how to run Kubo (go-ipfs) inside Docker can be found [here](https://docs.ipfs.tech/how-to/run-ipfs-inside-docker/).
-
-### Official prebuilt binaries
-
-The official binaries are published at https://dist.ipfs.tech#kubo:
-
-[![dist.ipfs.tech Downloads](https://img.shields.io/github/v/release/ipfs/kubo?label=dist.ipfs.tech&logo=ipfs&style=flat-square&cacheSeconds=3600)](https://dist.ipfs.tech#kubo)
-
-From there:
-- Click the blue "Download Kubo" on the right side of the page.
-- Open/extract the archive.
-- Move kubo (`ipfs`) to your path (`install.sh` can do it for you).
-
-If you are unable to access [dist.ipfs.tech](https://dist.ipfs.tech#kubo), you can also download kubo (go-ipfs) from:
-- this project's GitHub [releases](https://github.com/ipfs/kubo/releases/latest) page
-- `/ipns/dist.ipfs.tech` at [dweb.link](https://dweb.link/ipns/dist.ipfs.tech#kubo) gateway
-
-#### Updating
-
-##### Using ipfs-update
-
-IPFS has an updating tool that can be accessed through `ipfs update`. The tool is
-not installed alongside IPFS in order to keep that logic independent of the main
-codebase. To install `ipfs-update` tool, [download it here](https://dist.ipfs.tech/#ipfs-update).
-
-##### Downloading builds using IPFS
-
-List the available versions of Kubo (go-ipfs) implementation:
-
-```console
-$ ipfs cat /ipns/dist.ipfs.tech/kubo/versions
-```
-
-Then, to view available builds for a version from the previous command (`$VERSION`):
-
-```console
-$ ipfs ls /ipns/dist.ipfs.tech/kubo/$VERSION
-```
-
-To download a given build of a version:
-
-```console
-$ ipfs get /ipns/dist.ipfs.tech/kubo/$VERSION/kubo_$VERSION_darwin-386.tar.gz    # darwin 32-bit build
-$ ipfs get /ipns/dist.ipfs.tech/kubo/$VERSION/kubo_$VERSION_darwin-amd64.tar.gz  # darwin 64-bit build
-$ ipfs get /ipns/dist.ipfs.tech/kubo/$VERSION/kubo_$VERSION_freebsd-amd64.tar.gz # freebsd 64-bit build
-$ ipfs get /ipns/dist.ipfs.tech/kubo/$VERSION/kubo_$VERSION_linux-386.tar.gz     # linux 32-bit build
-$ ipfs get /ipns/dist.ipfs.tech/kubo/$VERSION/kubo_$VERSION_linux-amd64.tar.gz   # linux 64-bit build
-$ ipfs get /ipns/dist.ipfs.tech/kubo/$VERSION/kubo_$VERSION_linux-arm.tar.gz     # linux arm build
-$ ipfs get /ipns/dist.ipfs.tech/kubo/$VERSION/kubo_$VERSION_windows-amd64.zip    # windows 64-bit build
-```
-
-### Unofficial Linux packages
-
-- [Arch Linux](#arch-linux)
-- [Nix](#nix-linux)
-- [Solus](#solus)
-- [openSUSE](#opensuse)
-
-#### Arch Linux
-
-[![kubo via Community Repo](https://img.shields.io/archlinux/v/community/x86_64/kubo?color=1793d1&label=kubo&logo=arch-linux&style=flat-square&cacheSeconds=3600)](https://wiki.archlinux.org/title/IPFS)
-
-```bash
-# pacman -S kubo
-```
-
-[![kubo-git via AUR](https://img.shields.io/static/v1?label=kubo-git&message=latest%40master&color=1793d1&logo=arch-linux&style=flat-square&cacheSeconds=3600)](https://aur.archlinux.org/packages/kubo/)
-
-#### <a name="nix-linux">Nix</a>
-
-With the purely functional package manager [Nix](https://nixos.org/nix/) you can install kubo (go-ipfs) like this:
-
-```
-$ nix-env -i ipfs
-```
-
-You can also install the Package by using its attribute name, which is also `ipfs`.
-
-#### Solus
-
-In solus, kubo (go-ipfs) is available in the main repository as
-[go-ipfs](https://dev.getsol.us/source/go-ipfs/repository/master/).
-
-```
-$ sudo eopkg install go-ipfs
-```
-
-You can also install it through the Solus software center.
-
-#### openSUSE
-
-[Community Package for go-ipfs](https://software.opensuse.org/package/go-ipfs)
-
-#### Guix
-
-GNU's functional package manager, [Guix](https://www.gnu.org/software/guix/), also provides a go-ipfs package:
-
-```
-$ guix package -i go-ipfs
-```
-
-#### Snap
-
-> ⚠️ **SNAP USE IS DISCOURAGED**
-> 
-> If you want something more sophisticated to escape the Snap confinement, we recommend using a different method to install Kubo so that it is not subject to snap confinement.
-
-
-With snap, in any of the [supported Linux distributions](https://snapcraft.io/docs/core/install):
-
-```
-$ sudo snap install ipfs
-```
-
-The snap sets `IPFS_PATH` to `SNAP_USER_COMMON`, which is usually `~/snap/ipfs/common`. If you want to use `~/.ipfs` instead, you can bind-mount it to `~/snap/ipfs/common` like this:
-
-```
-$ sudo mount --bind ~/.ipfs ~/snap/ipfs/common
-```
-
-#### MacPorts
-
-The package [ipfs](https://ports.macports.org/port/ipfs) currently points to kubo (go-ipfs) and is being maintained.
-
-```
-$ sudo port install ipfs
-```
-
-#### <a name="nix-macos">Nix</a>
-
-In macOS you can use the purely functional package manager [Nix](https://nixos.org/nix/):
-
-```
-$ nix-env -i ipfs
-```
-
-You can also install the Package by using its attribute name, which is also `ipfs`.
-
-#### Homebrew
-
-A Homebrew formula [ipfs](https://formulae.brew.sh/formula/ipfs) is maintained too.
-
-```
-$ brew install --formula ipfs
-```
-
-### Unofficial Windows packages
-
-- [Chocolatey](#chocolatey)
-- [Scoop](#scoop)
-
-#### Chocolatey
-
-[![Chocolatey Version](https://img.shields.io/chocolatey/v/go-ipfs?color=00a4ef&label=go-ipfs&logo=windows&style=flat-square&cacheSeconds=3600)](https://chocolatey.org/packages/go-ipfs)
-
-```Powershell
-PS> choco install go-ipfs
-```
-
-#### Scoop
-
-Scoop provides kubo as `go-ipfs` in its 'extras' bucket.
-
-```Powershell
-PS> scoop bucket add extras
-PS> scoop install go-ipfs
-```
-
-### Unofficial macOS packages
-
-- [MacPorts](#macports)
-- [Nix](#nix-macos)
-- [Homebrew](#homebrew)
-
+[![Downloads](https://img.shields.io/github/v/release/ipfs/kubo?label=dist.ipfs.io&logo=ipfs&style=flat-square&cacheSeconds=3600)](https://github.com/luanet/go-lua/releases)
 
 ### Build from Source
 
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/ipfs/kubo?label=Requires%20Go&logo=go&style=flat-square&cacheSeconds=3600)
 
-kubo's build system requires Go and some standard POSIX build tools:
+go-lua's build system requires Go and some standard POSIX build tools:
 
 * GNU make
 * Git
@@ -315,16 +118,16 @@ export PATH=$PATH:$GOPATH/bin
 
 (If you run into trouble, see the [Go install instructions](https://golang.org/doc/install)).
 
-#### Download and Compile IPFS
+#### Download and Compile
 
 ```
-$ git clone https://github.com/ipfs/kubo.git
+$ git clone https://github.com/luanet/go-lua.git
 
-$ cd kubo
+$ cd go-lua
 $ make install
 ```
 
-Alternatively, you can run `make build` to build the go-ipfs binary (storing it in `cmd/ipfs/ipfs`) without installing it.
+Alternatively, you can run `make build` to build the go-lua binary (storing it in `cmd/ipfs/ipfs`) without installing it.
 
 **NOTE:** If you get an error along the lines of "fatal error: stdlib.h: No such file or directory", you're missing a C compiler. Either re-run `make` with `CGO_ENABLED=0` or install GCC.
 
@@ -338,7 +141,7 @@ make build GOOS=myTargetOS GOARCH=myTargetArchitecture
 
 ##### OpenSSL
 
-To build go-ipfs with OpenSSL support, append `GOTAGS=openssl` to your `make` invocation. Building with OpenSSL should significantly reduce the background CPU usage on nodes that frequently make or receive new connections.
+To build go-lua with OpenSSL support, append `GOTAGS=openssl` to your `make` invocation. Building with OpenSSL should significantly reduce the background CPU usage on nodes that frequently make or receive new connections.
 
 Note: OpenSSL requires CGO support and, by default, CGO is disabled when cross-compiling. To cross-compile with OpenSSL support, you must:
 
@@ -368,15 +171,14 @@ system, this is done with `ipfs init`. See `ipfs init --help` for information on
 the optional arguments it takes. After initialization is complete, you can use
 `ipfs mount`, `ipfs add` and any of the other commands to explore!
 
-### Some things to try
+### Join Lua Network
 
-Basic proof of 'ipfs working' locally:
+Go to [lua node](https://node.luanet.io/) and register your node ID.
 
-    echo "hello world" > hello
-    ipfs add hello
-    # This should output a hash string that looks something like:
-    # QmT78zSuBmuS4z925WZfrqQ1qHaJ56DQaTfyMUF7F8ff5o
-    ipfs cat <that hash>
+
+### Start Your Node
+
+`ipfs daemon`
 
 ### Troubleshooting
 
@@ -385,10 +187,6 @@ If you have previously installed IPFS before and you are running into problems g
 Please direct general questions and help requests to our [forums](https://discuss.ipfs.tech).
 
 If you believe you've found a bug, check the [issues list](https://github.com/ipfs/kubo/issues) and, if you don't see your problem there, either come talk to us on [Matrix chat](https://docs.ipfs.tech/community/chat/), or file an issue of your own!
-
-## Packages
-
-See [IPFS in GO](https://docs.ipfs.tech/reference/go/api/) documentation.
 
 ## Development
 
@@ -428,22 +226,6 @@ If you make changes to the protocol buffers, you will need to install the [proto
 ### Developer Notes
 
 Find more documentation for developers on [docs](./docs)
-
-## Maintainer Info
-* [Project Board for active and upcoming work](https://pl-strflt.notion.site/Kubo-GitHub-Project-Board-c68f9192e48e4e9eba185fa697bf0570)
-* [Release Process](https://pl-strflt.notion.site/Kubo-Release-Process-5a5d066264704009a28a79cff93062c4)
-* [Additional PL EngRes Kubo maintainer info](https://pl-strflt.notion.site/Kubo-go-ipfs-4a484aeeaa974dcf918027c300426c05)
-
-
-## Contributing
-
-[![](https://cdn.rawgit.com/jbenet/contribute-ipfs-gif/master/img/contribute.gif)](https://github.com/ipfs/community/blob/master/CONTRIBUTING.md)
-
-We ❤️ all [our contributors](docs/AUTHORS); this project wouldn’t be what it is without you! If you want to help out, please see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-This repository falls under the IPFS [Code of Conduct](https://github.com/ipfs/community/blob/master/code-of-conduct.md).
-
-Please reach out to us in one [chat](https://docs.ipfs.tech/community/chat/) rooms.
 
 ## License
 
