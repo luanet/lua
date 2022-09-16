@@ -13,8 +13,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -59,7 +61,7 @@ import (
 	"github.com/ipfs/kubo/repo"
 	irouting "github.com/ipfs/kubo/routing"
 
-	"github.com/luanet/lua-node/proto"
+	"github.com/luanet/lua-proto/proto"
 	"github.com/lucas-clemente/quic-go"
 )
 
@@ -194,6 +196,7 @@ func (n *IpfsNode) JoinLuanet() error {
 		return err
 	}
 
+	gob.Register(proto.Ip{})
 	gob.Register(proto.JoinReq{})
 	gob.Register(proto.JoinRes{})
 	tlsConf := &tls.Config{
@@ -201,6 +204,7 @@ func (n *IpfsNode) JoinLuanet() error {
 		NextProtos:         []string{"wq-vvv-01"},
 	}
 
+	log.Info("Connecting to node address: ", cfg.Luanet.Api)
 	conn, err := quic.DialAddr(cfg.Luanet.Api, tlsConf, nil)
 	if err != nil {
 		return err
@@ -211,24 +215,31 @@ func (n *IpfsNode) JoinLuanet() error {
 		return err
 	}
 
-	bytes := []byte(n.Identity.String() + "." + strconv.FormatInt(time.Now().Unix()+cfg.Luanet.ExpiresTime, 10))
+	expires := time.Now().Unix() + cfg.Luanet.ExpiresTime
+	bytes := []byte(n.Identity.String() + "." + strconv.FormatInt(expires, 10))
 	signature, err := n.PrivateKey.Sign(bytes)
 	if err != nil {
 		return err
 	}
 
+	ip4 := n.GetIpInfo("ip4")
+	log.Info("IPv4: %v\n", ip4.Address)
+	ip6 := n.GetIpInfo("ip6")
+	log.Info("IPv6: %v\n", ip6.Address)
+
 	message := proto.Proto{
 		Service: proto.JoinService,
 		Data: proto.JoinReq{
 			Address:   n.Identity.String(),
+			Ipv4:      *ip4,
+			Ipv6:      *ip6,
 			Signature: signature,
-			Expires:   time.Now().Unix() + cfg.Luanet.ExpiresTime,
+			Expires:   expires,
 		},
 	}
 
 	n.Stream = &stream
 	n.SendQuicMsg(message)
-
 	dec := gob.NewDecoder(stream)
 	err = dec.Decode(&message)
 	if err != nil {
@@ -243,19 +254,44 @@ func (n *IpfsNode) JoinLuanet() error {
 	return nil
 }
 
+func (n *IpfsNode) GetIpInfo(version string) *proto.Ip {
+	var ip proto.Ip = proto.Ip{}
+	cfg, err := n.Repo.Config()
+	if err != nil {
+		return &ip
+	}
+
+	var client = &http.Client{Timeout: 2 * time.Second}
+	r, err := client.Get("http://" + version + "." + cfg.Luanet.Domain)
+	if err != nil {
+		return &ip
+	}
+
+	defer r.Body.Close()
+	json.NewDecoder(r.Body).Decode(&ip)
+	return &ip
+}
+
 func (n *IpfsNode) HeartBeat() {
 	gob.Register(proto.HeartBeatReq{})
 	gob.Register(proto.HeartBeatRes{})
-	ticker := time.NewTicker(500 * time.Millisecond)
+	gob.Register(proto.Stats{})
+	ticker := time.NewTicker(time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Println("Get brandwidth to Sending heartBeat")
+			// TODO get stats from gateway only, not IPFS
 			totals := n.Reporter.GetBandwidthTotals()
 			message := proto.Proto{
 				Service: proto.HeartBeatService,
 				Data: proto.HeartBeatReq{
-					Stats: totals,
+					Stats: proto.Stats{
+						Storage: 0,
+						In:      totals.TotalIn,
+						Out:     totals.TotalOut,
+						Ingress: totals.RateIn,
+						Egress:  totals.RateOut,
+					},
 				},
 			}
 
@@ -267,14 +303,9 @@ func (n *IpfsNode) HeartBeat() {
 func (n *IpfsNode) SendQuicMsg(msg proto.Proto) {
 	enc := gob.NewEncoder(*n.Stream) // Will write to network.
 	err := enc.Encode(msg)
-	if err != nil && err.Error() == "timeout: no recent network activity" {
-		err = n.JoinLuanet()
-		if err != nil {
-			log.Error("Failed to rejoin network after error: %v", err)
-			panic("Failed to rejoin network after error.")
-		}
-	} else if err != nil {
-		log.Error("Failed to send heartbeat message: %v", err)
+	if err != nil {
+		log.Error("Failed to send quic message: %v", err)
+		n.JoinLuanet()
 	}
 }
 

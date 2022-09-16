@@ -117,7 +117,9 @@ const DefaultConnMgrGracePeriod = time.Second * 20
 
 func luanetConfig() Luanet {
 	return Luanet{
-		Api:         "node.luanet.io",
+		Domain:      "luanet.io",
+		Node:        "node.luanet.io",
+		Api:         "127.0.0.1:9090",
 		ExpiresTime: 3600,
 	}
 }
