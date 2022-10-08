@@ -1158,6 +1158,8 @@ github.com/luanet/go-ds-gcs v0.8.3-0.20220711084833-aaf919b18d5e h1:RfTGkywfmZ6K
 github.com/luanet/go-ds-gcs v0.8.3-0.20220711084833-aaf919b18d5e/go.mod h1:zMFQggTbYVrldYgB9XY0kskqZCb8KL5xZe2r1min3bc=
 github.com/luanet/lua-proto v0.0.0-20221007033518-fdd7d547be01 h1:w30kmUvY2X+4ms7CxgtA3SY9Z1sMSlgpBZ+XYOkFU1Q=
 github.com/luanet/lua-proto v0.0.0-20221007033518-fdd7d547be01/go.mod h1:WIRY7QEYnFn2GLGxlql05Genc+tCQU8Y8SnnaJemJG4=
+github.com/luanet/lua-proto v0.0.0-20221008011721-98106010ddea h1:6PeIGSVC0YJzOyF32kmGCLXc4xtsSJIMueddMzg/bGc=
+github.com/luanet/lua-proto v0.0.0-20221008011721-98106010ddea/go.mod h1:WIRY7QEYnFn2GLGxlql05Genc+tCQU8Y8SnnaJemJG4=
 github.com/lucas-clemente/quic-go v0.19.3/go.mod h1:ADXpNbTQjq1hIzCpB+y/k5iz4n4z4IwqoLb94Kh5Hu8=
 github.com/lucas-clemente/quic-go v0.21.2/go.mod h1:vF5M1XqhBAHgbjKcJOXY3JZz3GP0T3FQhz/uyOUS38Q=
 github.com/lucas-clemente/quic-go v0.23.0/go.mod h1:paZuzjXCE5mj6sikVLMvqXk8lJV2AsqtJ6bDhjEfxx0=

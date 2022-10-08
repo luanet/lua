@@ -120,7 +120,7 @@ require (
 	github.com/ipfs/go-ipfs-redirects-file v0.1.1
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/luanet/go-ds-gcs v0.8.3-0.20220711084833-aaf919b18d5e
-	github.com/luanet/lua-proto v0.0.0-20221007033518-fdd7d547be01
+	github.com/luanet/lua-proto v0.0.0-20221008011721-98106010ddea
 	github.com/lucas-clemente/quic-go v0.29.1
 	github.com/showwin/speedtest-go v1.1.5
 )

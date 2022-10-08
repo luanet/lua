@@ -12,7 +12,6 @@ import (
 
 func NodeTest(testResult chan proto.TestResult) {
 	result := proto.TestResult{}
-	result.Ports = make(map[string]proto.IpTest)
 	// port forwarding checking...
 	v4 := ipv4Test()
 	v6 := ipv6Test()
@@ -20,8 +19,8 @@ func NodeTest(testResult chan proto.TestResult) {
 		logger.Error("Your node's ports is not open to the internet.")
 	}
 
-	result.Ports["v4"] = v4
-	result.Ports["v6"] = v6
+	result.V4 = v4
+	result.V6 = v6
 
 	// speedtest
 	user, _ := speedtest.FetchUserInfo()

@@ -467,7 +467,6 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		result := make(chan proto.TestResult)
 		go nodeCore.NodeTest(result)
 		message.Data = <-result
-		fmt.Printf("%v\n", message)
 		node.SendQuicMsg(message)
 	}
 
