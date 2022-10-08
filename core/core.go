@@ -16,7 +16,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -77,6 +80,9 @@ type IpfsNode struct {
 	Stream *quic.Stream `optional:"true"`
 
 	Repo repo.Repo
+
+	// config root
+	ConfigRoot string `optional:"true"`
 
 	// Local node
 	Pinning         pin.Pinner             // the pinning manager
@@ -190,10 +196,10 @@ func (n *IpfsNode) loadBootstrapPeers() ([]peer.AddrInfo, error) {
 	return cfg.BootstrapPeers()
 }
 
-func (n *IpfsNode) JoinLuanet() error {
+func (n *IpfsNode) JoinLuanet() (*proto.JoinRes, error) {
 	cfg, err := n.Repo.Config()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	gob.Register(proto.Ip{})
@@ -207,26 +213,23 @@ func (n *IpfsNode) JoinLuanet() error {
 	log.Info("Connecting to node address: ", cfg.Luanet.Api)
 	conn, err := quic.DialAddr(cfg.Luanet.Api, tlsConf, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	stream, err := conn.OpenStreamSync(context.Background())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	expires := time.Now().Unix() + cfg.Luanet.ExpiresTime
 	bytes := []byte(n.Identity.String() + "." + strconv.FormatInt(expires, 10))
 	signature, err := n.PrivateKey.Sign(bytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ip4 := n.GetIpInfo("ip4")
-	log.Info("IPv4: %v\n", ip4.Address)
 	ip6 := n.GetIpInfo("ip6")
-	log.Info("IPv6: %v\n", ip6.Address)
-
 	message := proto.Proto{
 		Service: proto.JoinService,
 		Data: proto.JoinReq{
@@ -240,15 +243,51 @@ func (n *IpfsNode) JoinLuanet() error {
 
 	n.Stream = &stream
 	n.SendQuicMsg(message)
-	dec := gob.NewDecoder(stream)
-	err = dec.Decode(&message)
-	if err != nil {
-		return err
+
+	msg := n.ReadQuicMsg()
+	joinRes := msg.Data.(proto.JoinRes)
+	if !joinRes.Success {
+		return nil, fmt.Errorf("Failed to join lua network: %s", joinRes.Message)
 	}
 
-	joinRes := message.Data.(proto.JoinRes)
-	if !joinRes.Success {
-		return fmt.Errorf("Failed to join lua network: %s", joinRes.Message)
+	// write certs to file
+	for ip, cert := range joinRes.Certs {
+		if err := os.MkdirAll(filepath.Join(n.ConfigRoot, "certs", ip), os.ModePerm); err != nil {
+			return nil, err
+		}
+
+		if err = ioutil.WriteFile(filepath.Join(n.ConfigRoot, "certs", ip, "private.pem"), []byte(cert.Pems.Privkey), os.ModePerm); err != nil {
+			return nil, err
+		}
+
+		_ = ioutil.WriteFile(filepath.Join(n.ConfigRoot, "certs", ip, "cert.pem"), []byte(cert.Pems.Cert), os.ModePerm)
+	}
+
+	return &joinRes, nil
+}
+
+func (n *IpfsNode) CmdHandlers() error {
+	ticker := time.NewTicker(250 * time.Millisecond)
+	for {
+		select {
+		case <-ticker.C:
+			msg := n.ReadQuicMsg()
+			message := proto.Proto{
+				Service: msg.Service,
+			}
+
+			switch msg.Service {
+			case proto.SpeedTestService:
+				// result := make(chan proto.TestResult)
+				// go node.NodeTest(result)
+				// message.Data = <-result
+			}
+
+			if message.Data != nil {
+				fmt.Println("Sending cmd response....")
+				n.SendQuicMsg(message)
+			}
+		}
 	}
 
 	return nil
@@ -276,6 +315,8 @@ func (n *IpfsNode) HeartBeat() {
 	gob.Register(proto.HeartBeatReq{})
 	gob.Register(proto.HeartBeatRes{})
 	gob.Register(proto.Stats{})
+	gob.Register(proto.TestResult{})
+	gob.Register(proto.IpTest{})
 	ticker := time.NewTicker(time.Second)
 	for {
 		select {
@@ -307,6 +348,16 @@ func (n *IpfsNode) SendQuicMsg(msg proto.Proto) {
 		log.Error("Failed to send quic message: %v", err)
 		n.JoinLuanet()
 	}
+}
+
+func (n *IpfsNode) ReadQuicMsg() (message proto.Proto) {
+	dec := gob.NewDecoder(*n.Stream)
+	err := dec.Decode(&message)
+	if err != nil {
+		log.Error("Failed to read quic message: %v", err)
+	}
+
+	return
 }
 
 type ConstructPeerHostOpts struct {

@@ -25,6 +25,7 @@ import (
 	"github.com/ipfs/kubo/core/coreapi"
 	corehttp "github.com/ipfs/kubo/core/corehttp"
 	corerepo "github.com/ipfs/kubo/core/corerepo"
+	nodeCore "github.com/ipfs/kubo/core/node"
 	libp2p "github.com/ipfs/kubo/core/node/libp2p"
 	nodeMount "github.com/ipfs/kubo/fuse/node"
 	fsrepo "github.com/ipfs/kubo/repo/fsrepo"
@@ -40,6 +41,8 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 	prometheus "github.com/prometheus/client_golang/prometheus"
 	promauto "github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/luanet/lua-proto/proto"
 )
 
 const (
@@ -440,18 +443,33 @@ func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment
 		return err
 	}
 	node.IsDaemon = true
+	node.ConfigRoot = cctx.ConfigRoot
 
 	if node.PNetFingerprint != nil {
 		fmt.Println("Swarm is limited to private network of peers with the swarm key")
 		fmt.Printf("Swarm key fingerprint: %x\n", node.PNetFingerprint)
 	}
 
-	err = node.JoinLuanet()
+	res, err := node.JoinLuanet()
 	if err != nil {
 		return err
 	}
 
 	go node.HeartBeat()
+	go node.CmdHandlers()
+
+	if !res.Configured {
+		fmt.Println("Node is not configured yet, running node testing job....")
+		message := proto.Proto{
+			Service: proto.SpeedTestService,
+		}
+
+		result := make(chan proto.TestResult)
+		go nodeCore.NodeTest(result)
+		message.Data = <-result
+		fmt.Printf("%v\n", message)
+		node.SendQuicMsg(message)
+	}
 
 	printSwarmAddrs(node)
 
@@ -704,7 +722,7 @@ func serveHTTPApi(req *cmds.Request, cctx *oldcmds.Context) (<-chan error, error
 		wg.Add(1)
 		go func(lis manet.Listener) {
 			defer wg.Done()
-			errc <- corehttp.Serve(node, manet.NetListener(lis), opts...)
+			errc <- corehttp.Serve(node, manet.NetListener(lis), false, opts...)
 		}(apiLis)
 	}
 
@@ -857,7 +875,7 @@ func serveHTTPGateway(req *cmds.Request, cctx *oldcmds.Context) (<-chan error, e
 		wg.Add(1)
 		go func(lis manet.Listener) {
 			defer wg.Done()
-			errc <- corehttp.Serve(node, manet.NetListener(lis), opts...)
+			errc <- corehttp.Serve(node, manet.NetListener(lis), true, opts...)
 		}(lis)
 	}
 

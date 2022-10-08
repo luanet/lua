@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	logging "github.com/ipfs/go-log"
@@ -77,12 +79,12 @@ func ListenAndServe(n *core.IpfsNode, listeningMultiAddr string, options ...Serv
 	addr = list.Multiaddr()
 	fmt.Printf("API server listening on %s\n", addr)
 
-	return Serve(n, manet.NetListener(list), options...)
+	return Serve(n, manet.NetListener(list), false, options...)
 }
 
 // Serve accepts incoming HTTP connections on the listener and pass them
 // to ServeOption handlers.
-func Serve(node *core.IpfsNode, lis net.Listener, options ...ServeOption) error {
+func Serve(node *core.IpfsNode, lis net.Listener, isGateway bool, options ...ServeOption) error {
 	// make sure we close this no matter what.
 	defer lis.Close()
 
@@ -108,7 +110,25 @@ func Serve(node *core.IpfsNode, lis net.Listener, options ...ServeOption) error 
 
 	var serverError error
 	serverProc := node.Process.Go(func(p goprocess.Process) {
-		serverError = server.Serve(lis)
+		certPath := ""
+		host, _, _ := net.SplitHostPort(lis.Addr().String())
+		if ip := net.ParseIP(host); ip != nil {
+			if isV4 := ip.To4(); isV4 != nil {
+				certPath = filepath.Join(node.ConfigRoot, "certs", "ipv4")
+			} else {
+				certPath = filepath.Join(node.ConfigRoot, "certs", "ipv6")
+			}
+
+			if _, err := os.Stat(filepath.Join(certPath, "private.pem")); err != nil {
+				certPath = ""
+			}
+		}
+
+		if certPath != "" && isGateway {
+			serverError = server.ServeTLS(lis, filepath.Join(certPath, "cert.pem"), filepath.Join(certPath, "private.pem"))
+		} else {
+			serverError = server.Serve(lis)
+		}
 	})
 
 	// wait for server to exit.
