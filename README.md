@@ -324,7 +324,7 @@ $ cd kubo
 $ make install
 ```
 
-Alternatively, you can run `make build` to build the go-ipfs binary (storing it in `cmd/ipfs/ipfs`) without installing it.
+Alternatively, you can run `make build` to build the go-ipfs binary (storing it in `cmd/luanet/ipfs`) without installing it.
 
 **NOTE:** If you get an error along the lines of "fatal error: stdlib.h: No such file or directory", you're missing a C compiler. Either re-run `make` with `CGO_ENABLED=0` or install GCC.
 
@@ -394,7 +394,7 @@ See [IPFS in GO](https://docs.ipfs.tech/reference/go/api/) documentation.
 
 Some places to get you started on the codebase:
 
-- Main file: [./cmd/ipfs/main.go](https://github.com/ipfs/kubo/blob/master/cmd/ipfs/main.go)
+- Main file: [./cmd/luanet/main.go](https://github.com/ipfs/kubo/blob/master/cmd/luanet/main.go)
 - CLI Commands: [./core/commands/](https://github.com/ipfs/kubo/tree/master/core/commands)
 - Bitswap (the data trading engine): [go-bitswap](https://github.com/ipfs/go-bitswap)
 - libp2p

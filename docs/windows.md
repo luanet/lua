@@ -117,13 +117,13 @@ Clone and change directory to the source code, if you haven't already:
 CMD:
 ```bat
 git clone https://github.com/ipfs/kubo %GOPATH%/src/github.com/ipfs/kubo
-cd %GOPATH%/src/github.com/ipfs/kubo/cmd/ipfs
+cd %GOPATH%/src/github.com/ipfs/kubo/cmd/luanet
 ```
 
 PowerShell:
 ```powershell
 git clone https://github.com/ipfs/kubo $env:GOPATH/src/github.com/ipfs/kubo
-cd $env:GOPATH/src/github.com/ipfs/kubo/cmd/ipfs
+cd $env:GOPATH/src/github.com/ipfs/kubo/cmd/luanet
 ```
 
 We need the `git` commit hash to be included in our build so that in the extremely rare event a bug is found, we have a reference point later for tracking it. We'll ask `git` for it and store it in a variable. The syntax for the next command is different depending on whether you're using the interactive command line or writing a batch file. Use the one that applies to you.  

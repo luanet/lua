@@ -37,13 +37,13 @@ include $(dir)/Rules.mk
 dir := test
 include $(dir)/Rules.mk
 
-dir := cmd/ipfs
+dir := cmd/luanet
 include $(dir)/Rules.mk
 
 # include this file only if coverage target is executed
 # it is quite expensive
 ifneq ($(filter coverage% clean distclean test/unit/gotest.junit.xml,$(MAKECMDGOALS)),)
-	# has to be after cmd/ipfs due to PATH
+	# has to be after cmd/luanet due to PATH
 	dir := coverage
 	include $(dir)/Rules.mk
 endif
@@ -87,7 +87,7 @@ nofuse: GOTAGS += nofuse
 nofuse: build
 .PHONY: nofuse
 
-install: cmd/ipfs-install
+install: cmd/luanet-install
 .PHONY: install
 
 install_unsupported: install
@@ -99,7 +99,7 @@ install_unsupported: install
 .PHONY: install_unsupported
 
 uninstall:
-	$(GOCC) clean -i ./cmd/ipfs
+	$(GOCC) clean -i ./cmd/luanet
 .PHONY: uninstall
 
 supported:
@@ -116,10 +116,10 @@ help:
 	@echo 'BUILD TARGETS:'
 	@echo ''
 	@echo '  all          - print this help message'
-	@echo '  build        - Build binary at ./cmd/ipfs/ipfs'
+	@echo '  build        - Build binary at ./cmd/luanet/luanet'
 	@echo '  nofuse       - Build binary with no fuse support'
 	@echo '  install      - Build binary and install into $$GOPATH/bin'
-#	@echo '  dist_install - TODO: c.f. ./cmd/ipfs/dist/README.md'
+#	@echo '  dist_install - TODO: c.f. ./cmd/luanet/dist/README.md'
 	@echo ''
 	@echo 'CLEANING TARGETS:'
 	@echo ''

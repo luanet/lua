@@ -12,7 +12,7 @@ import (
 // for IPFS. they are nodes run by the IPFS team. docs on these later.
 // As with all p2p networks, bootstrap is an important security concern.
 //
-// NOTE: This is here -- and not inside cmd/ipfs/init.go -- because of an
+// NOTE: This is here -- and not inside cmd/luanet/init.go -- because of an
 // import dependency issue. TODO: move this into a config/default/ package.
 var DefaultBootstrapAddresses = []string{
 	"/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
@@ -32,7 +32,7 @@ func (c *Config) BootstrapPeers() ([]peer.AddrInfo, error) {
 
 // DefaultBootstrapPeers returns the (parsed) set of default bootstrap peers.
 // if it fails, it returns a meaningful error for the user.
-// This is here (and not inside cmd/ipfs/init) because of module dependency problems.
+// This is here (and not inside cmd/luanet/init) because of module dependency problems.
 func DefaultBootstrapPeers() ([]peer.AddrInfo, error) {
 	ps, err := ParseBootstrapPeers(DefaultBootstrapAddresses)
 	if err != nil {

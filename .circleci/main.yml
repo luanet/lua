@@ -76,11 +76,11 @@ jobs:
     - *make_out_dirs
     - *restore_gomod
     - run:
-        command: make cmd/ipfs-try-build
+        command: make cmd/luanet-try-build
         environment:
           TEST_NO_FUSE: 0
     - run:
-        command: make cmd/ipfs-try-build
+        command: make cmd/luanet-try-build
         environment:
           TEST_NO_FUSE: 1
     - *store_gomod
@@ -215,7 +215,7 @@ jobs:
           name: Storing
           command: |
             mkdir -p /tmp/circleci-workspace/bin
-            cp cmd/ipfs/ipfs /tmp/circleci-workspace/bin
+            cp cmd/luanet/ipfs /tmp/circleci-workspace/bin
       - persist_to_workspace:
           root: /tmp/circleci-workspace
           paths:

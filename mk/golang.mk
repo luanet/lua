@@ -35,11 +35,11 @@ go-tags=$(if $(GOTAGS), -tags="$(call join-with,$(space),$(GOTAGS))")
 go-flags-with-tags=$(GOFLAGS)$(go-tags)
 
 define go-build-relative
-$(GOCC) build $(go-flags-with-tags) -o "$@" "$(call go-pkg-name,$<)"
+$(GOCC) build $(go-flags-with-tags) "$(call go-pkg-name,$<)"
 endef
 
 define go-build
-$(GOCC) build $(go-flags-with-tags) -o "$@" "$(1)"
+$(GOCC) build $(go-flags-with-tags) "$(1)"
 endef
 
 define go-try-build

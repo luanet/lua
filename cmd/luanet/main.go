@@ -1,4 +1,4 @@
-// cmd/ipfs implements the primary CLI binary for ipfs
+// cmd/luanet implements the primary CLI binary for ipfs
 package main
 
 import (
@@ -12,7 +12,7 @@ import (
 	"runtime/pprof"
 	"time"
 
-	util "github.com/ipfs/kubo/cmd/ipfs/util"
+	util "github.com/ipfs/kubo/cmd/luanet/util"
 	oldcmds "github.com/ipfs/kubo/commands"
 	core "github.com/ipfs/kubo/core"
 	corecmds "github.com/ipfs/kubo/core/commands"
@@ -35,7 +35,7 @@ import (
 )
 
 // log is the command logger
-var log = logging.Logger("cmd/ipfs")
+var log = logging.Logger("cmd/luanet")
 
 // declared as a var for testing purposes
 var dnsResolver = madns.DefaultResolver

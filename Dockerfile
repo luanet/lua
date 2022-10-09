@@ -52,7 +52,7 @@ LABEL maintainer="Steven Allen <steven@stebalien.com>"
 
 # Get the ipfs binary, entrypoint script, and TLS CAs from the build container.
 ENV SRC_DIR /kubo
-COPY --from=0 $SRC_DIR/cmd/ipfs/ipfs /usr/local/bin/ipfs
+COPY --from=0 $SRC_DIR/cmd/luanet/ipfs /usr/local/bin/ipfs
 COPY --from=0 $SRC_DIR/bin/container_daemon /usr/local/bin/start_ipfs
 COPY --from=0 $SRC_DIR/bin/container_init_run /usr/local/bin/container_init_run
 COPY --from=0 /tmp/su-exec/su-exec-static /sbin/su-exec
